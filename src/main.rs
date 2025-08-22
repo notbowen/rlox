@@ -6,8 +6,10 @@ use std::io;
 use std::io::BufRead;
 use std::process;
 
+use crate::errors::ParsingError;
 use crate::scanner::Scanner;
 
+mod errors;
 mod macros;
 mod scanner;
 mod token;
@@ -28,7 +30,10 @@ fn main() {
 
 fn run_file(path: &str) {
     let code = fs::read_to_string(path).expect("Cannot find file to run");
-    run(code);
+    match run(code) {
+        Ok(_) => {}
+        Err(_) => process::exit(65),
+    }
 }
 
 fn run_prompt() {
@@ -37,16 +42,18 @@ fn run_prompt() {
 
     for line_result in stdin.lock().lines() {
         let line = line_result.expect("Unable to read from STDIN");
-        run(line);
+        let _ = run(line);
         print_flush!("> ");
     }
 }
 
-fn run(code: String) {
-    let scanner = Scanner::new(code);
-    let tokens = scanner.scan_tokens();
+fn run(code: String) -> Result<(), ParsingError> {
+    let mut scanner = Scanner::new(code);
+    let tokens = scanner.scan_tokens()?;
 
     for token in tokens {
         println!("{}", token);
     }
+
+    Ok(())
 }
